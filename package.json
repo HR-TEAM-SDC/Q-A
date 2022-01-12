@@ -1,0 +1,23 @@
+{
+  "name": "q-a",
+  "version": "1.0.0",
+  "description": "API for all Q&A needs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HR-TEAM-SDC/Q-A.git"
+  },
+  "author": "Jake Hawkins",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HR-TEAM-SDC/Q-A/issues"
+  },
+  "homepage": "https://github.com/HR-TEAM-SDC/Q-A#readme",
+  "dependencies": {
+    "express": "^4.17.2",
+    "pg": "^8.7.1"
+  }
+}
