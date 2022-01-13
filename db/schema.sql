@@ -12,8 +12,8 @@ CREATE TABLE answers (
  id BIGSERIAL,
  id_questions INTEGER,
  body VARCHAR(250),
- date_written INTEGER,
- answerer_name VARCHAR(25),
+ date_written BIGINT,
+ answerer_name VARCHAR(40),
  answerer_email VARCHAR(40),
  reported BYTEA,
  helpful INTEGER
@@ -28,8 +28,8 @@ CREATE TABLE questions (
  id BIGSERIAL,
  product_id INTEGER,
  body VARCHAR(250),
- date_written INTEGER,
- asker_name VARCHAR(25),
+ date_written BIGINT,
+ asker_name VARCHAR(40),
  asker_email VARCHAR(40),
  reported BYTEA,
  helpful INTEGER
