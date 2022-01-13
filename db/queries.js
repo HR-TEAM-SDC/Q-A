@@ -3,6 +3,8 @@ const Pool = require('pg').Pool;
 const pool = new Pool({
   user: 'me',
   password: 'password',
+  host: 'localhost',
+  port: 5432,
   database: 'q_a',
 });
 
@@ -15,6 +17,4 @@ pool
     console.log(err);
   });
 
-module.exports = {
-  pool,
-};
+module.exports = pool;
