@@ -134,6 +134,7 @@ app.get('/qa/questions/:question_id/answers', async (req, res) => {
 });
 
 app.use(
+  // needed for json body
   bodyParser.urlencoded({
     extended: true,
   })
@@ -152,6 +153,40 @@ app.post('/qa/questions', async (req, res) => {
   );
 
   if (postQuestion.rowCount === 1) {
+    res.status(201);
+    res.end('Created');
+  } else {
+    res.status(400);
+    res.end('Bad Request');
+  }
+});
+
+app.post('/qa/questions/:question_id/answers', async (req, res) => {
+  const params = req.params; //{question_id: number} this is how to access this portion
+  const body = req.body; //{body, name, email, photos[]} is what we are expecting, if missing respond accordingly.
+
+  var postAnswer = await pool.query(
+    `INSERT INTO answers (id_questions, body, date_written, answerer_name, answerer_email, reported, helpful) VALUES ('${
+      params.question_id
+    }', '${body.body}', '${new Date().toISOString()}', '${body.name}', '${
+      body.email
+    }', '0', '0');`
+  );
+
+  var answerPhotoID = await pool.query(
+    //answerPhotoID.rows[0].id will be the correct answer_id for what just got inserted
+    `select id from answers order by id desc limit 1;`
+  );
+
+  if (body.photos.length !== 0) {
+    body.photos.length.forEach((url) => {
+      var photoInsert = pool.query(
+        `INSERT INTO answer_photos (id_answers, url) VALUES ('${answerPhotoID.rows[0]}', '${url}');`
+      );
+    });
+  }
+
+  if (postAnswer.rowCount === 1) {
     res.status(201);
     res.end('Created');
   } else {
@@ -218,3 +253,5 @@ const photosWhere = function (idNumbers) {
 
   return finalCommand;
 };
+
+const photosInsert = function (photoURLs) {};
