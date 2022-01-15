@@ -25,7 +25,7 @@ app.get('/qa/questions', async (req, res) => {
     WHERE product_id=${query.product_id} LIMIT ${count};`
   );
 
-  var ids = grabQID(getQuestions.rows);
+  var ids = grabQID(getQuestions.rows); //merely scraping all question IDS to have answer Query be all set
 
   var getAnswers = await pool.query(
     `SELECT *
@@ -33,13 +33,52 @@ app.get('/qa/questions', async (req, res) => {
     WHERE ${answersWhere(ids)}`
   );
 
+  var aids = grabAID(getAnswers.rows);
+
+  var getPhotos = await pool.query(
+    `SELECT *
+    FROM answer_photos
+    WHERE ${photosWhere(aids)}`
+  );
+
   var package = {
+    //accumalator variable which will be return to sender
     product_id: `${query.product_id}`,
     results: [],
   };
 
+  getQuestions.rows.forEach((question) => {
+    //Attaching both Questions and Answers Data Server Side
+    getAnswers.rows.forEach((answer) => {
+      if (!question.answers) {
+        question.answers = {};
+      }
+      if (question.question_id == answer.id_questions) {
+        question.answers[answer.id] = {
+          id: Number(answer.id),
+          body: answer.body,
+          date: answer.date_written,
+          answerer_name: answer.answerer_name,
+          helpfulness: answer.helpful,
+          photos: [],
+        };
+        getPhotos.rows.forEach((photo) => {
+          if (answer.id == photo.id_answers) {
+            question.answers[answer.id].photos.push(photo.url);
+          }
+        });
+      }
+    });
+  });
+
+  getQuestions.rows.forEach((question) => {
+    question.reported = !!Number(question.reported); //fixing boolean reported data
+  });
+
+  package.results = getQuestions.rows;
+
   res.status(200);
-  res.json(getAnswers.rows);
+  res.json(package);
 });
 
 app.get('/qa/questions/:question_id/answers', async (req, res) => {
@@ -69,6 +108,14 @@ const grabQID = function (qArray) {
   return iterable;
 };
 
+const grabAID = function (aArray) {
+  var iterable = [];
+  aArray.forEach((answer) => {
+    iterable.push(answer.id);
+  });
+  return iterable;
+};
+
 const answersWhere = function (idNumbers) {
   if (idNumbers.length === 1) {
     return `id_questions=${idNumbers[0]}`;
@@ -82,6 +129,25 @@ const answersWhere = function (idNumbers) {
       finalCommand += `OR id_questions=${id} `;
     } else {
       finalCommand += `OR id_questions=${id}`;
+    }
+  });
+
+  return finalCommand;
+};
+
+const photosWhere = function (idNumbers) {
+  if (idNumbers.length === 1) {
+    return `id_answers=${idNumbers[0]}`;
+  }
+  let finalCommand = '';
+
+  idNumbers.forEach((id, index) => {
+    if (index === 0) {
+      finalCommand += `id_answers=${id} `;
+    } else if (index !== idNumbers.length - 1) {
+      finalCommand += `OR id_answers=${id} `;
+    } else {
+      finalCommand += `OR id_answers=${id}`;
     }
   });
 

@@ -51,3 +51,9 @@ ALTER TABLE answer_photos ADD CONSTRAINT answer_photos_pkey PRIMARY KEY (id);
 
 ALTER TABLE answers ADD CONSTRAINT answers_id_questions_fkey FOREIGN KEY (id_questions) REFERENCES questions(id);
 ALTER TABLE answer_photos ADD CONSTRAINT answer_photos_id_answers_fkey FOREIGN KEY (id_answers) REFERENCES answers(id);
+
+UPDATE questions SET date_written = date_written/1000;
+ALTER TABLE questions ALTER COLUMN date_written TYPE TIMESTAMP USING to_timestamp(date_written);
+
+UPDATE answers SET date_written = date_written/1000;
+ALTER TABLE answers ALTER COLUMN date_written TYPE TIMESTAMP USING to_timestamp(date_written);
