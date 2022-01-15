@@ -57,3 +57,14 @@ ALTER TABLE questions ALTER COLUMN date_written TYPE TIMESTAMP USING to_timestam
 
 UPDATE answers SET date_written = date_written/1000;
 ALTER TABLE answers ALTER COLUMN date_written TYPE TIMESTAMP USING to_timestamp(date_written);
+
+-- still need to update the sequence on all tables so you can begin inserting in the correct spot.
+-- to find the final id number where you begin to add stuff:  select id from <tablename> order by id desc limit 1; add one to this. replace id with * to grab last row.
+
+--ALTER SEQUENCE answers_id_seq RESTART WITH <number from from above> ;
+--ALTER SEQUENCE questions_id_seq RESTART WITH <number from from above>;
+--ALTER SEQUENCE answer_photos_id_seq RESTART WITH <number from from above>;
+
+-- answers insert ex: INSERT INTO answers (id_questions, body, date_written, answerer_name, answerer_email, reported, helpful) VALUES ('1', 'nonsense', '2020-07-27 14:18:34', 'jake', 'jake@fake.com', '0', '0');
+-- questions insert ex: INSERT INTO questions (product_id, body, date_written, asker_name, asker_email, reported, helpful) VALUES ('1', 'nonsense', '2020-07-27 14:18:34', 'jake', 'jake@fake.com', '0', '0');
+-- photos insert ex: INSERT INTO answer_photos (id_answers, url) VALUES ('1', 'fakeurl');

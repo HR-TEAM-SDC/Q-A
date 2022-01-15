@@ -1,6 +1,7 @@
 const express = require('express');
 const { param } = require('express/lib/request');
 const pool = require('../db/queries');
+const bodyParser = require('body-parser');
 
 const app = express();
 const port = 3000;
@@ -74,6 +75,7 @@ app.get('/qa/questions', async (req, res) => {
 
   getQuestions.rows.forEach((question) => {
     question.reported = !!Number(question.reported); //fixing boolean reported data
+    question.question_id = Number(question.question_id);
   });
 
   package.results = getQuestions.rows;
@@ -131,10 +133,31 @@ app.get('/qa/questions/:question_id/answers', async (req, res) => {
   res.send(package);
 });
 
+app.use(
+  bodyParser.urlencoded({
+    extended: true,
+  })
+);
+app.use(bodyParser.json());
+
 app.post('/qa/questions', async (req, res) => {
-  const query = req.query; //{body, name, email, product_id} is what we are expecting, if missing respond appropriately.
-  res.status(201);
-  res.end();
+  const body = req.body; //{body, name, email, product_id} is what we are expecting, if missing respond appropriately.
+
+  var postQuestion = await pool.query(
+    `INSERT INTO questions (product_id, body, date_written, asker_name, asker_email, reported, helpful) VALUES ('${
+      body.product_id
+    }', '${body.body}', '${new Date().toISOString()}', '${body.name}', '${
+      body.email
+    }', '0', '0');`
+  );
+
+  if (postQuestion.rowCount === 1) {
+    res.status(201);
+    res.end('Created');
+  } else {
+    res.status(400);
+    res.end('Bad Request');
+  }
 });
 
 app.listen(port, () => {
