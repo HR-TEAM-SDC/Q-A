@@ -35,12 +35,12 @@ app.get('/qa/questions', async (req, res) => {
     WHERE ${answersWhere(ids)}`
   );
 
-  var aids = grabAID(getAnswers.rows);
+  var answerIDObtain = grabAID(getAnswers.rows);
 
   var getPhotos = await pool.query(
     `SELECT *
     FROM answer_photos
-    WHERE ${photosWhere(aids)}`
+    WHERE ${photosWhere(answerIDObtain)}`
   );
 
   var package = {
@@ -193,6 +193,50 @@ app.post('/qa/questions/:question_id/answers', async (req, res) => {
     res.status(400);
     res.end('Bad Request');
   }
+});
+
+app.put('/qa/questions/:question_id/helpful', async (req, res) => {
+  const params = req.params; //{question_id: number} this is how to access this portion
+
+  var putHelpfulQ = await pool.query(
+    `UPDATE questions SET helpful = helpful + 1 WHERE id = ${params.question_id};`
+  );
+
+  res.status(204);
+  res.end();
+});
+
+app.put('/qa/questions/:question_id/report', async (req, res) => {
+  const params = req.params; //{question_id: number} this is how to access this portion
+
+  var putReportQ = await pool.query(
+    `UPDATE questions SET reported = '1' WHERE id = ${params.question_id};`
+  );
+
+  res.status(204);
+  res.end();
+});
+
+app.put('/qa/answers/:answer_id/helpful', async (req, res) => {
+  const params = req.params; //{answer_id: number} this is how to access this portion
+
+  var putHelpfulA = await pool.query(
+    `UPDATE answers SET helpful = helpful + 1 WHERE id = ${params.answer_id};`
+  );
+
+  res.status(204);
+  res.end();
+});
+
+app.put('/qa/answers/:answer_id/report', async (req, res) => {
+  const params = req.params; //{answer_id: number} this is how to access this portion
+
+  var putReportQ = await pool.query(
+    `UPDATE answers SET reported = '1' WHERE id = ${params.answer_id};`
+  );
+
+  res.status(204);
+  res.end();
 });
 
 app.listen(port, () => {
