@@ -1,4 +1,5 @@
 const express = require('express');
+const { param } = require('express/lib/request');
 const pool = require('../db/queries');
 
 const app = express();
@@ -83,9 +84,51 @@ app.get('/qa/questions', async (req, res) => {
 
 app.get('/qa/questions/:question_id/answers', async (req, res) => {
   // console.log(req.params); {question_id: number} this is how to access this portion
+  const params = req.params;
   const query = req.query; // {page, count} parameters allowed for this request
+
+  var package = {
+    //accumalator variable which will be return to sender
+    question: params.question_id,
+    page: query.page || 1,
+    count: query.count || 5,
+    results: [],
+  };
+
+  var getAnswers = await pool.query(
+    `SELECT *
+    FROM answers
+    WHERE id_questions=${params.question_id}`
+  );
+
+  var answerIDS = grabAID(getAnswers.rows);
+
+  var getPhotos = await pool.query(
+    `SELECT *
+    FROM answer_photos
+    WHERE ${photosWhere(answerIDS)}`
+  );
+
+  getAnswers.rows.forEach((answer) => {
+    var slot = {};
+    slot.answer_id = answer.id;
+    slot.body = answer.body;
+    slot.date = answer.date_written;
+    slot.answerer_name = answer.answerer_name;
+    slot.helpfulness = answer.helpful;
+    slot.photos = [];
+
+    getPhotos.rows.forEach((photo) => {
+      if (answer.id == photo.id_answers) {
+        slot.photos.push(photo.url);
+      }
+    });
+
+    package.results.push(slot);
+  });
+
   res.status(200);
-  res.send('success2');
+  res.send(package);
 });
 
 app.post('/qa/questions', async (req, res) => {
@@ -99,7 +142,6 @@ app.listen(port, () => {
 });
 
 //helper functions
-
 const grabQID = function (qArray) {
   var iterable = [];
   qArray.forEach((question) => {
