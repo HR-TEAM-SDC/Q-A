@@ -15,73 +15,72 @@ app.get('/qa/questions', async (req, res) => {
   let page = query.page || 1;
   let count = query.count || 5;
 
-  if (!query.product_id) {
-    //if no product id is recieved, send back response
+  try {
+    var getQuestions = await pool.query(
+      `SELECT id AS question_id, body AS question_body, date_written AS question_date, asker_name, helpful AS question_helpfulness, reported
+    FROM questions
+    WHERE product_id=${query.product_id} LIMIT ${count};`
+    );
+
+    var ids = grabQID(getQuestions.rows); //merely scraping all question IDS to have answer Query be all set
+
+    var getAnswers = await pool.query(
+      `SELECT *
+    FROM answers
+    WHERE ${answersWhere(ids)}`
+    );
+
+    var answerIDObtain = grabAID(getAnswers.rows);
+
+    var getPhotos = await pool.query(
+      `SELECT *
+    FROM answer_photos
+    WHERE ${photosWhere(answerIDObtain)}`
+    );
+
+    var package = {
+      //accumalator variable which will be return to sender
+      product_id: `${query.product_id}`,
+      results: [],
+    };
+
+    getQuestions.rows.forEach((question) => {
+      //Attaching both Questions and Answers Data Server Side
+      getAnswers.rows.forEach((answer) => {
+        if (!question.answers) {
+          question.answers = {};
+        }
+        if (question.question_id == answer.id_questions) {
+          question.answers[answer.id] = {
+            id: Number(answer.id),
+            body: answer.body,
+            date: answer.date_written,
+            answerer_name: answer.answerer_name,
+            helpfulness: answer.helpful,
+            photos: [],
+          };
+          getPhotos.rows.forEach((photo) => {
+            if (answer.id == photo.id_answers) {
+              question.answers[answer.id].photos.push(photo.url);
+            }
+          });
+        }
+      });
+    });
+
+    getQuestions.rows.forEach((question) => {
+      question.reported = !!Number(question.reported); //fixing boolean reported data
+      question.question_id = Number(question.question_id);
+    });
+
+    package.results = getQuestions.rows;
+
+    res.status(200);
+    res.json(package);
+  } catch (err) {
     res.status(422);
     res.send('Error: invalid product_id provided');
   }
-
-  var getQuestions = await pool.query(
-    `SELECT id AS question_id, body AS question_body, date_written AS question_date, asker_name, helpful AS question_helpfulness, reported
-    FROM questions
-    WHERE product_id=${query.product_id} LIMIT ${count};`
-  );
-
-  var ids = grabQID(getQuestions.rows); //merely scraping all question IDS to have answer Query be all set
-
-  var getAnswers = await pool.query(
-    `SELECT *
-    FROM answers
-    WHERE ${answersWhere(ids)}`
-  );
-
-  var answerIDObtain = grabAID(getAnswers.rows);
-
-  var getPhotos = await pool.query(
-    `SELECT *
-    FROM answer_photos
-    WHERE ${photosWhere(answerIDObtain)}`
-  );
-
-  var package = {
-    //accumalator variable which will be return to sender
-    product_id: `${query.product_id}`,
-    results: [],
-  };
-
-  getQuestions.rows.forEach((question) => {
-    //Attaching both Questions and Answers Data Server Side
-    getAnswers.rows.forEach((answer) => {
-      if (!question.answers) {
-        question.answers = {};
-      }
-      if (question.question_id == answer.id_questions) {
-        question.answers[answer.id] = {
-          id: Number(answer.id),
-          body: answer.body,
-          date: answer.date_written,
-          answerer_name: answer.answerer_name,
-          helpfulness: answer.helpful,
-          photos: [],
-        };
-        getPhotos.rows.forEach((photo) => {
-          if (answer.id == photo.id_answers) {
-            question.answers[answer.id].photos.push(photo.url);
-          }
-        });
-      }
-    });
-  });
-
-  getQuestions.rows.forEach((question) => {
-    question.reported = !!Number(question.reported); //fixing boolean reported data
-    question.question_id = Number(question.question_id);
-  });
-
-  package.results = getQuestions.rows;
-
-  res.status(200);
-  res.json(package);
 });
 
 app.get('/qa/questions/:question_id/answers', async (req, res) => {
@@ -97,40 +96,45 @@ app.get('/qa/questions/:question_id/answers', async (req, res) => {
     results: [],
   };
 
-  var getAnswers = await pool.query(
-    `SELECT *
+  try {
+    var getAnswers = await pool.query(
+      `SELECT *
     FROM answers
     WHERE id_questions=${params.question_id}`
-  );
+    );
 
-  var answerIDS = grabAID(getAnswers.rows);
+    var answerIDS = grabAID(getAnswers.rows);
 
-  var getPhotos = await pool.query(
-    `SELECT *
+    var getPhotos = await pool.query(
+      `SELECT *
     FROM answer_photos
     WHERE ${photosWhere(answerIDS)}`
-  );
+    );
 
-  getAnswers.rows.forEach((answer) => {
-    var slot = {};
-    slot.answer_id = answer.id;
-    slot.body = answer.body;
-    slot.date = answer.date_written;
-    slot.answerer_name = answer.answerer_name;
-    slot.helpfulness = answer.helpful;
-    slot.photos = [];
+    getAnswers.rows.forEach((answer) => {
+      var slot = {};
+      slot.answer_id = answer.id;
+      slot.body = answer.body;
+      slot.date = answer.date_written;
+      slot.answerer_name = answer.answerer_name;
+      slot.helpfulness = answer.helpful;
+      slot.photos = [];
 
-    getPhotos.rows.forEach((photo) => {
-      if (answer.id == photo.id_answers) {
-        slot.photos.push(photo.url);
-      }
+      getPhotos.rows.forEach((photo) => {
+        if (answer.id == photo.id_answers) {
+          slot.photos.push(photo.url);
+        }
+      });
+
+      package.results.push(slot);
     });
 
-    package.results.push(slot);
-  });
-
-  res.status(200);
-  res.send(package);
+    res.status(200);
+    res.send(package);
+  } catch (err) {
+    res.status(404);
+    res.send(err);
+  }
 });
 
 app.use(
