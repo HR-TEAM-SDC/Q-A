@@ -4,7 +4,7 @@
   "description": "API for all Q&A needs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "k6 run test/100rps.js",
     "start": "nodemon server/index.js"
   },
   "repository": {
@@ -19,6 +19,7 @@
   "homepage": "https://github.com/HR-TEAM-SDC/Q-A#readme",
   "dependencies": {
     "express": "^4.17.2",
+    "k6": "^0.0.0",
     "pg": "^8.7.1"
   },
   "devDependencies": {
