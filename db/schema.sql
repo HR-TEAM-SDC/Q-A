@@ -69,3 +69,12 @@ ALTER TABLE answer_photos ADD CONSTRAINT answer_photos_id_answers_fkey FOREIGN K
 --ALTER SEQUENCE answers_id_seq RESTART WITH <number from from above> ;
 --ALTER SEQUENCE questions_id_seq RESTART WITH <number from from above>;
 --ALTER SEQUENCE answer_photos_id_seq RESTART WITH <number from from above>;
+
+
+-----------------------------
+
+-- Optimization Commands That Are worth Running
+
+--CREATE INDEX ON questions(product_id);
+--CREATE INDEX ON questions(id);
+--CREATE INDEX ON answers(id);

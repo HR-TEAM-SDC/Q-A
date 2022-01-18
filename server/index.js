@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 
 const app = express();
 const port = 3000;
+let qCache = {};
+let aCache = {};
 
 app.get('/', (req, res) => {
   res.send('Hello, express server here!');
@@ -15,66 +17,71 @@ app.get('/qa/questions', async (req, res) => {
   let page = query.page || 1;
   let count = query.count || 5;
 
-  try {
-    var getQuestions = await pool.query(
-      `SELECT id AS question_id, body AS question_body, date_written AS question_date, asker_name, helpful AS question_helpfulness, reported
+  if (qCache[query.product_id]) {
+    res.status(200).json(qCache[query.product_id]);
+  } else {
+    try {
+      var getQuestions = await pool.query(
+        `SELECT id AS question_id, body AS question_body, date_written AS question_date, asker_name, helpful AS question_helpfulness, reported
     FROM questions
     WHERE product_id=${query.product_id} LIMIT ${count};`
-    );
+      );
 
-    var ids = grabQID(getQuestions.rows); //merely scraping all question IDS to have answer Query be all set
+      var ids = grabQID(getQuestions.rows); //merely scraping all question IDS to have answer Query be all set
 
-    var getAnswers = await pool.query(
-      `SELECT *
+      var getAnswers = await pool.query(
+        `SELECT *
     FROM answers
     WHERE ${answersWhere(ids)}`
-    );
+      );
 
-    var answerIDObtain = grabAID(getAnswers.rows);
+      var answerIDObtain = grabAID(getAnswers.rows);
 
-    var getPhotos = await pool.query(
-      `SELECT *
+      var getPhotos = await pool.query(
+        `SELECT *
     FROM answer_photos
     WHERE ${photosWhere(answerIDObtain)}`
-    );
+      );
 
-    var package = {
-      //accumalator variable which will be return to sender
-      product_id: `${query.product_id}`,
-      results: [],
-    };
+      var package = {
+        //accumalator variable which will be return to sender
+        product_id: `${query.product_id}`,
+        results: [],
+      };
 
-    getQuestions.rows.forEach((question) => {
-      //Attaching both Questions and Answers Data Server Side
-      getAnswers.rows.forEach((answer) => {
+      getQuestions.rows.forEach((question) => {
+        //Attaching both Questions and Answers Data Server Side
         if (!question.answers) {
           question.answers = {};
         }
-        if (question.question_id == answer.id_questions) {
-          question.answers[answer.id] = {
-            id: Number(answer.id),
-            body: answer.body,
-            date: answer.date_written,
-            answerer_name: answer.answerer_name,
-            helpfulness: answer.helpful,
-            photos: [],
-          };
-          getPhotos.rows.forEach((photo) => {
-            if (answer.id == photo.id_answers) {
-              question.answers[answer.id].photos.push(photo.url);
-            }
-          });
-        }
+        getAnswers.rows.forEach((answer) => {
+          if (question.question_id == answer.id_questions) {
+            question.answers[answer.id] = {
+              id: Number(answer.id),
+              body: answer.body,
+              date: answer.date_written,
+              answerer_name: answer.answerer_name,
+              helpfulness: answer.helpful,
+              photos: [],
+            };
+            getPhotos.rows.forEach((photo) => {
+              if (answer.id == photo.id_answers) {
+                question.answers[answer.id].photos.push(photo.url);
+              }
+            });
+          }
+        });
       });
-    });
 
-    package.results = getQuestions.rows;
+      package.results = getQuestions.rows;
+      qCache[query.product_id] = package;
 
-    res.status(200);
-    res.json(package);
-  } catch (err) {
-    res.status(422);
-    res.send('Error: invalid product_id provided');
+      res.status(200);
+      res.json(package);
+    } catch (err) {
+      res.status(422);
+      res.send('Error: invalid product_id provided');
+    }
   }
 });
 
@@ -83,52 +90,57 @@ app.get('/qa/questions/:question_id/answers', async (req, res) => {
   const params = req.params;
   const query = req.query; // {page, count} parameters allowed for this request
 
-  var package = {
-    //accumalator variable which will be return to sender
-    question: params.question_id,
-    page: query.page || 1,
-    count: query.count || 5,
-    results: [],
-  };
+  if (aCache[params.question_id]) {
+    res.status(200).send(aCache[params.question_id]);
+  } else {
+    var package = {
+      //accumalator variable which will be return to sender
+      question: params.question_id,
+      page: query.page || 1,
+      count: query.count || 5,
+      results: [],
+    };
 
-  try {
-    var getAnswers = await pool.query(
-      `SELECT *
+    try {
+      var getAnswers = await pool.query(
+        `SELECT *
     FROM answers
     WHERE id_questions=${params.question_id}`
-    );
+      );
 
-    var answerIDS = grabAID(getAnswers.rows);
+      var answerIDS = grabAID(getAnswers.rows);
 
-    var getPhotos = await pool.query(
-      `SELECT *
+      var getPhotos = await pool.query(
+        `SELECT *
     FROM answer_photos
     WHERE ${photosWhere(answerIDS)}`
-    );
+      );
 
-    getAnswers.rows.forEach((answer) => {
-      var slot = {};
-      slot.answer_id = answer.id;
-      slot.body = answer.body;
-      slot.date = answer.date_written;
-      slot.answerer_name = answer.answerer_name;
-      slot.helpfulness = answer.helpful;
-      slot.photos = [];
+      getAnswers.rows.forEach((answer) => {
+        var slot = {};
+        slot.answer_id = answer.id;
+        slot.body = answer.body;
+        slot.date = answer.date_written;
+        slot.answerer_name = answer.answerer_name;
+        slot.helpfulness = answer.helpful;
+        slot.photos = [];
 
-      getPhotos.rows.forEach((photo) => {
-        if (answer.id == photo.id_answers) {
-          slot.photos.push(photo.url);
-        }
+        getPhotos.rows.forEach((photo) => {
+          if (answer.id == photo.id_answers) {
+            slot.photos.push(photo.url);
+          }
+        });
+
+        package.results.push(slot);
       });
 
-      package.results.push(slot);
-    });
-
-    res.status(200);
-    res.send(package);
-  } catch (err) {
-    res.status(404);
-    res.send(err);
+      aCache[params.question_id] = package;
+      res.status(200);
+      res.send(package);
+    } catch (err) {
+      res.status(404);
+      res.send(err);
+    }
   }
 });
 
@@ -152,6 +164,7 @@ app.post('/qa/questions', async (req, res) => {
   );
 
   if (postQuestion.rowCount === 1) {
+    delete qCache[body.product_id];
     res.status(201);
     res.end('Created');
   } else {
@@ -186,6 +199,7 @@ app.post('/qa/questions/:question_id/answers', async (req, res) => {
   }
 
   if (postAnswer.rowCount === 1) {
+    delete aCache[params.question_id];
     res.status(201);
     res.end('Created');
   } else {

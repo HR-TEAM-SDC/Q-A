@@ -25,7 +25,7 @@ export default function () {
   //   `${urlrand}${random1}${Math.floor(Math.random() * (1000000 - 1 + 1)) + 1}`
   // ); // Randomizer for GET1
 
-  // const rest = http.get(
+  // const res = http.get(
   //   `${urlrand}/${Math.floor(Math.random() * (1000000 - 1 + 1)) + 1}${random2}`
   // ); // Randomizer for GET2
 
