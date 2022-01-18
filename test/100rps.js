@@ -10,24 +10,24 @@ export const options = {
 };
 
 export default function () {
-  // const url = 'http://localhost:3000/qa/questions?product_id=1'; //first GET request with a single product
+  const url = 'http://localhost:3000/qa/questions?product_id=1'; //first GET request with a single product
   // const url = 'http://localhost:3000/qa/questions/1/answers'; //Second GET request with a single product
 
-  // const res = http.get(url); // Basic GET for a single product
+  const res = http.get(url); // Basic GET for a single product
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  const urlrand = 'http://localhost:3000/qa/questions'; // URL for randomized products
+  // const urlrand = 'http://localhost:3000/qa/questions'; // URL for randomized products
   // const random1 = '?product_id='; //First GET request with a random product
-  const random2 = '/answers'; //Second GET request with a random product
+  // const random2 = '/answers'; //Second GET request with a random product
 
   // const res = http.get(
   //   `${urlrand}${random1}${Math.floor(Math.random() * (1000000 - 1 + 1)) + 1}`
   // ); // Randomizer for GET1
 
-  const rest = http.get(
-    `${urlrand}/${Math.floor(Math.random() * (1000000 - 1 + 1)) + 1}${random2}`
-  ); // Randomizer for GET2
+  // const rest = http.get(
+  //   `${urlrand}/${Math.floor(Math.random() * (1000000 - 1 + 1)) + 1}${random2}`
+  // ); // Randomizer for GET2
 
   sleep(1);
   check(res, {

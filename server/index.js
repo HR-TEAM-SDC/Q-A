@@ -68,11 +68,6 @@ app.get('/qa/questions', async (req, res) => {
       });
     });
 
-    getQuestions.rows.forEach((question) => {
-      question.reported = !!Number(question.reported); //fixing boolean reported data
-      question.question_id = Number(question.question_id);
-    });
-
     package.results = getQuestions.rows;
 
     res.status(200);

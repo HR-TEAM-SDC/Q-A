@@ -6,6 +6,23 @@ DELIMITER ','
 CSV HEADER;
 
 COPY answers
+FROM '/home/jacobhawkins/Documents/SDC/test answers.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY answer_photos
+FROM '/home/jacobhawkins/Documents/SDC/test photos.csv'
+DELIMITER ','
+CSV HEADER;
+
+---------------------------------------------Above is for my testing purposes, Below is for the Real Deal-----------------------------
+
+COPY questions
+FROM '/home/jacobhawkins/Documents/SDC/questions.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY answers
 FROM '/home/jacobhawkins/Documents/SDC/answers.csv'
 DELIMITER ','
 CSV HEADER;
